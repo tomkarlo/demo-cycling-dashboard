@@ -54,7 +54,19 @@ export default function CounterDetail({ counter, latestDate, onClose }) {
 
   if (!counter) return null;
 
-  const maxHour = hourly.reduce((m, r) => Math.max(m, r.total), 0);
+  // Build a full 24-slot day regardless of what the API returned
+  const ALL_HOURS = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`);
+  const hourMap   = Object.fromEntries(hourly.map(r => [r.hour, r.total]));
+  const fullDay   = ALL_HOURS.map(h => ({ hour: h, total: hourMap[h] ?? 0, hasData: h in hourMap }));
+
+  // Last hour with actual data = the live (most recent) reading
+  const liveIdx = ALL_HOURS.reduce((last, h, i) => (h in hourMap ? i : last), -1);
+
+  function barColor(i) {
+    if (i > liveIdx)  return '#e2e8f0'; // future / previous-day hours
+    if (i === liveIdx) return '#16a34a'; // live hour
+    return '#dcfce7';                    // earlier hours today
+  }
 
   return (
     <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
@@ -128,8 +140,18 @@ export default function CounterDetail({ counter, latestDate, onClose }) {
 
       {/* Hourly chart */}
       <div style={{ padding: '16px 20px 24px' }}>
-        <div style={{ color: 'var(--muted)', fontSize: 12, marginBottom: 12 }}>
-          Cyclists by hour today
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div style={{ color: 'var(--muted)', fontSize: 12 }}>Cyclists by hour</div>
+          {liveIdx >= 0 && (
+            <div style={{ display: 'flex', gap: 10 }}>
+              {[['#dcfce7', '#16a34a', 'Today'], ['#e2e8f0', '#e2e8f0', 'Previous day']].map(([bg, border, label]) => (
+                <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: 2, background: bg, border: `1.5px solid ${border}`, display: 'inline-block' }} />
+                  <span style={{ color: 'var(--muted)', fontSize: 10 }}>{label}</span>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         {loading ? (
           <div style={{ color: 'var(--muted)', fontSize: 13 }}>Loading…</div>
@@ -137,7 +159,7 @@ export default function CounterDetail({ counter, latestDate, onClose }) {
           <div style={{ color: 'var(--muted)', fontSize: 13 }}>No hourly data available</div>
         ) : (
           <ResponsiveContainer width="100%" height={140}>
-            <BarChart data={hourly} margin={{ top: 0, right: 0, left: -24, bottom: 0 }}>
+            <BarChart data={fullDay} margin={{ top: 0, right: 0, left: -24, bottom: 0 }}>
               <XAxis
                 dataKey="hour"
                 tick={{ fontSize: 10, fill: 'var(--muted)', fontFamily: 'var(--font-body)' }}
@@ -157,15 +179,15 @@ export default function CounterDetail({ counter, latestDate, onClose }) {
                   fontFamily: 'var(--font-body)',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                 }}
-                formatter={(v) => [v.toLocaleString(), 'cyclists']}
+                formatter={(v, name, props) => {
+                  if (!props.payload.hasData) return ['No data', ''];
+                  return [v.toLocaleString(), 'cyclists'];
+                }}
                 labelStyle={{ color: 'var(--muted)', fontSize: 11 }}
               />
               <Bar dataKey="total" radius={[3, 3, 0, 0]}>
-                {hourly.map((entry, i) => (
-                  <Cell
-                    key={i}
-                    fill={entry.total === maxHour ? '#16a34a' : '#dcfce7'}
-                  />
+                {fullDay.map((entry, i) => (
+                  <Cell key={i} fill={barColor(i)} />
                 ))}
               </Bar>
             </BarChart>
