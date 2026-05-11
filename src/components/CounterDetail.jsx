@@ -59,8 +59,9 @@ export default function CounterDetail({ counter, latestDate, onClose }) {
   const hourMap   = Object.fromEntries(hourly.map(r => [r.hour, r.total]));
   const fullDay   = ALL_HOURS.map(h => ({ hour: h, total: hourMap[h] ?? 0, hasData: h in hourMap }));
 
-  // Last hour with actual data = the live (most recent) reading
-  const liveIdx = ALL_HOURS.reduce((last, h, i) => (h in hourMap ? i : last), -1);
+  // Live hour = last completed clock hour (e.g. 8:05pm → index 19 = "19:00")
+  const nowHour = new Date().getHours();
+  const liveIdx = nowHour === 0 ? 23 : nowHour - 1;
 
   function barColor(i) {
     if (i > liveIdx)  return '#e2e8f0'; // future / previous-day hours
