@@ -1,4 +1,4 @@
-import { formatCount, formatPct, friendlyName, pctChange, markerColor } from '../lib/utils';
+import { formatCount, formatPct, friendlyName, pctChange } from '../lib/utils';
 import BoroughSparkline from './BoroughSparkline';
 
 function boroughTotals(counters) {
@@ -10,34 +10,38 @@ function boroughTotals(counters) {
   return { today, week, month, year };
 }
 
+function markerColor(weekPct) {
+  if (weekPct == null) return '#94a3b8';
+  if (weekPct > 10)   return '#16a34a';
+  if (weekPct < -10)  return '#dc2626';
+  return '#d97706';
+}
+
 function DeltaRow({ label, pct, baseline }) {
   const noData = pct == null;
   const up = pct > 0;
   const color = noData ? 'var(--muted)' : up ? 'var(--up)' : 'var(--down)';
-  const arrow = noData ? '' : up ? '↑' : '↓';
 
   return (
     <div style={{
       display: 'flex',
       alignItems: 'center',
-      padding: '7px 20px',
+      padding: '10px 20px',
       borderBottom: '1px solid var(--border)',
       gap: 12,
     }}>
       <div style={{
-        width: 3, height: 28, borderRadius: 2,
+        width: 3, height: 32, borderRadius: 2,
         background: noData ? 'var(--nodata)' : color,
         flexShrink: 0,
       }} />
-      <span style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', width: 48, flexShrink: 0 }}>
-        {label}
-      </span>
-      <span style={{ color, fontFamily: 'var(--font-display)', fontSize: 22, letterSpacing: '0.04em', lineHeight: 1 }}>
-        {noData ? '—' : `${arrow} ${Math.abs(pct).toFixed(1)}%`}
+      <span style={{ color: 'var(--muted)', fontSize: 12, width: 80, flexShrink: 0 }}>{label}</span>
+      <span style={{ color, fontSize: 18, fontWeight: 700, lineHeight: 1 }}>
+        {noData ? '—' : `${up ? '↑' : '↓'} ${Math.abs(pct).toFixed(1)}%`}
       </span>
       {baseline != null && (
-        <span style={{ color: 'var(--muted)', fontSize: 10, marginLeft: 'auto' }}>
-          {formatCount(baseline)}
+        <span style={{ color: 'var(--muted)', fontSize: 12, marginLeft: 'auto' }}>
+          {formatCount(baseline)} prior
         </span>
       )}
     </div>
@@ -56,38 +60,41 @@ function CounterRow({ counter, maxTotal, onSelect }) {
         position: 'relative',
         width: '100%',
         textAlign: 'left',
-        padding: '8px 20px',
+        padding: '9px 20px',
         display: 'flex',
         alignItems: 'center',
         gap: 10,
         borderBottom: '1px solid var(--border)',
         background: 'transparent',
         border: 'none',
+        borderBottom: '1px solid var(--border)',
         cursor: 'pointer',
-        transition: 'background 0.15s',
       }}
-      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+      onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
     >
       <div className="counter-bar" style={{ width: `${barWidth}%` }} />
 
       <span style={{
-        width: 7, height: 7, borderRadius: '50%',
+        width: 8, height: 8, borderRadius: '50%',
         background: color, flexShrink: 0,
+        border: '2px solid white',
+        boxShadow: `0 0 0 1px ${color}`,
         position: 'relative', zIndex: 1,
       }} />
 
       <span style={{
-        flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        color: 'var(--text)', fontSize: 11,
+        flex: 1, minWidth: 0,
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        color: 'var(--text)', fontSize: 13,
         position: 'relative', zIndex: 1,
       }}>
         {friendlyName(counter.name)}
       </span>
 
       <span style={{
-        fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 500,
-        color: 'var(--text)', tabularNums: true,
+        fontSize: 13, fontWeight: 600,
+        color: 'var(--text)',
         position: 'relative', zIndex: 1,
       }}>
         {formatCount(counter.total)}
@@ -95,7 +102,8 @@ function CounterRow({ counter, maxTotal, onSelect }) {
 
       {counter.weekPct != null && (
         <span style={{
-          fontSize: 10, color, width: 46, textAlign: 'right', flexShrink: 0,
+          fontSize: 12, fontWeight: 500,
+          color, width: 50, textAlign: 'right', flexShrink: 0,
           position: 'relative', zIndex: 1,
         }}>
           {formatPct(counter.weekPct)}
@@ -118,67 +126,56 @@ export default function StatsPanel({ counters, boroughSeries, latestDate, onSele
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
       {/* Hero total */}
-      <div className="fade-up" style={{ padding: '20px 20px 16px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 4 }}>
-          Borough Total Today
+      <div className="fade-up" style={{ padding: '20px 20px 18px', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ color: 'var(--muted)', fontSize: 12, marginBottom: 6 }}>
+          Total cyclists today
         </div>
         <div style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 72,
-          lineHeight: 0.9,
-          letterSpacing: '-0.01em',
-          color: 'var(--text)',
+          fontSize: 56, fontWeight: 700, lineHeight: 1,
+          color: 'var(--text)', letterSpacing: '-0.02em',
         }}>
           {formatCount(totals.today)}
         </div>
-        <div style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 6 }}>
-          Cyclists Counted
+        <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 6 }}>
+          across all {counters.length} counters
         </div>
       </div>
 
-      {/* Period comparisons */}
-      <div className="fade-up" style={{ animationDelay: '0.08s', borderBottom: '1px solid var(--border)' }}>
-        <DeltaRow label="Week"  pct={weekPct}  baseline={totals.week} />
-        <DeltaRow label="Month" pct={monthPct} baseline={totals.month} />
-        <DeltaRow label="Year"  pct={yearPct}  baseline={totals.year} />
+      {/* Comparisons */}
+      <div className="fade-up" style={{ animationDelay: '0.06s', borderBottom: '1px solid var(--border)' }}>
+        <DeltaRow label="vs last week"  pct={weekPct}  baseline={totals.week} />
+        <DeltaRow label="vs last month" pct={monthPct} baseline={totals.month} />
+        <DeltaRow label="vs last year"  pct={yearPct}  baseline={totals.year} />
       </div>
 
       {/* Sparkline */}
       {boroughSeries.length > 0 && (
-        <div className="fade-up" style={{ animationDelay: '0.14s', padding: '12px 20px 8px', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>
-            90-Day Trend
-          </div>
+        <div className="fade-up" style={{ animationDelay: '0.12s', padding: '14px 20px 10px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ color: 'var(--muted)', fontSize: 12, marginBottom: 8 }}>Daily totals — last 90 days</div>
           <BoroughSparkline series={boroughSeries} />
         </div>
       )}
 
-      {/* Legend row */}
+      {/* Legend */}
       <div style={{
-        padding: '6px 20px',
+        padding: '8px 20px',
         borderBottom: '1px solid var(--border)',
-        display: 'flex', alignItems: 'center', gap: 14,
-        flexShrink: 0,
+        display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
       }}>
-        <span style={{ color: 'var(--muted)', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase' }}>vs last week</span>
-        {[
-          ['var(--up)', '>+10%'],
-          ['var(--neutral)', '±10%'],
-          ['var(--down)', '<-10%'],
-          ['var(--nodata)', 'N/A'],
-        ].map(([c, l]) => (
-          <span key={l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: c, display: 'inline-block' }} />
-            <span style={{ color: 'var(--muted)', fontSize: 9 }}>{l}</span>
+        <span style={{ color: 'var(--muted)', fontSize: 11 }}>vs last week:</span>
+        {[['#16a34a', 'Up'], ['#d97706', 'Steady'], ['#dc2626', 'Down'], ['#94a3b8', 'No data']].map(([c, l]) => (
+          <span key={l} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: c, display: 'inline-block', border: '1.5px solid white', boxShadow: `0 0 0 1px ${c}` }} />
+            <span style={{ color: 'var(--muted)', fontSize: 11 }}>{l}</span>
           </span>
         ))}
       </div>
 
       {/* Counter list */}
-      <div className="fade-up" style={{ animationDelay: '0.2s', flex: 1, overflowY: 'auto' }}>
+      <div className="fade-up" style={{ animationDelay: '0.18s', flex: 1, overflowY: 'auto' }}>
         <div style={{ padding: '8px 20px 4px', display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: 'var(--muted)', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Counter</span>
-          <span style={{ color: 'var(--muted)', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Today / Δ Week</span>
+          <span style={{ color: 'var(--muted)', fontSize: 11 }}>Location</span>
+          <span style={{ color: 'var(--muted)', fontSize: 11 }}>Count · change</span>
         </div>
         {sorted.map(c => (
           <CounterRow key={c.identifier} counter={c} maxTotal={maxTotal} onSelect={onSelect} />

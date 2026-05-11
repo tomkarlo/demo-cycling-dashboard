@@ -15,10 +15,10 @@ export function formatPct(pct) {
 }
 
 export function markerColor(pct) {
-  if (pct == null) return '#2a4060'; // no baseline
-  if (pct > 10)   return '#b4ff4d'; // acid green — up
-  if (pct < -10)  return '#ff3a56'; // red — down
-  return '#f5a623';                  // amber — flat
+  if (pct == null) return '#94a3b8';
+  if (pct > 10)   return '#16a34a';
+  if (pct < -10)  return '#dc2626';
+  return '#d97706';
 }
 
 export function subtractDays(isoDate, days) {

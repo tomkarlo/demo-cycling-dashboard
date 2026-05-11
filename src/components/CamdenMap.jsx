@@ -1,13 +1,21 @@
 import { useEffect } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from 'react-leaflet';
-import { markerColor, formatCount, formatPct, friendlyName } from '../lib/utils';
+import { formatCount, formatPct, friendlyName } from '../lib/utils';
 
-// Pumps invalidateSize() every animation frame for the duration of the panel
-// transition so Leaflet reflows the canvas as the container grows/shrinks.
+const CAMDEN_CENTER = [51.541, -0.143];
+const ZOOM = 13;
+
+function markerFill(weekPct) {
+  if (weekPct == null) return '#94a3b8';
+  if (weekPct > 10)   return '#16a34a';
+  if (weekPct < -10)  return '#dc2626';
+  return '#d97706';
+}
+
 function MapResizer({ panelOpen }) {
   const map = useMap();
   useEffect(() => {
-    const DURATION = 420; // slightly longer than the 0.38s CSS transition
+    const DURATION = 420;
     const start = Date.now();
     let raf;
     function tick() {
@@ -20,23 +28,6 @@ function MapResizer({ panelOpen }) {
   return null;
 }
 
-const CAMDEN_CENTER = [51.541, -0.143];
-const ZOOM = 13;
-
-const MARKER_COLORS = {
-  up: '#b4ff4d',
-  down: '#ff3a56',
-  neutral: '#f5a623',
-  nodata: '#2a4060',
-};
-
-function getMarkerColor(weekPct) {
-  if (weekPct == null) return MARKER_COLORS.nodata;
-  if (weekPct > 10) return MARKER_COLORS.up;
-  if (weekPct < -10) return MARKER_COLORS.down;
-  return MARKER_COLORS.neutral;
-}
-
 export default function CamdenMap({ counters, selectedId, onSelect, panelOpen }) {
   return (
     <MapContainer
@@ -47,11 +38,11 @@ export default function CamdenMap({ counters, selectedId, onSelect, panelOpen })
     >
       <MapResizer panelOpen={panelOpen} />
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
       />
       {counters.map((c) => {
-        const color = getMarkerColor(c.weekPct);
+        const fill = markerFill(c.weekPct);
         const isSelected = c.identifier === selectedId;
 
         return (
@@ -60,25 +51,25 @@ export default function CamdenMap({ counters, selectedId, onSelect, panelOpen })
             center={[c.lat, c.lng]}
             radius={isSelected ? 13 : 9}
             pathOptions={{
-              color: isSelected ? '#ffffff' : color,
-              fillColor: color,
-              fillOpacity: isSelected ? 1 : 0.8,
-              weight: isSelected ? 2.5 : 1,
+              color: '#ffffff',
+              fillColor: fill,
+              fillOpacity: isSelected ? 1 : 0.85,
+              weight: isSelected ? 3 : 2,
             }}
             eventHandlers={{ click: () => onSelect(c) }}
           >
             <Tooltip direction="top" offset={[0, -10]}>
-              <div style={{ fontFamily: 'var(--font-mono)' }}>
-                <div style={{ color: 'var(--accent)', fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 3 }}>
+              <div style={{ fontFamily: 'var(--font-body)', minWidth: 150 }}>
+                <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)', marginBottom: 4 }}>
                   {friendlyName(c.name)}
                 </div>
-                <div style={{ fontSize: 15, fontFamily: 'var(--font-display)', letterSpacing: '0.05em', color: 'var(--text)' }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', lineHeight: 1.1 }}>
                   {formatCount(c.total)}
                 </div>
-                <div style={{ color: 'var(--muted)', fontSize: 10, marginTop: 2 }}>cyclists today</div>
+                <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 2 }}>cyclists today</div>
                 {c.weekPct != null && (
-                  <div style={{ color, marginTop: 4, fontSize: 11 }}>
-                    {c.weekPct > 0 ? '↑' : '↓'} {formatPct(c.weekPct)} vs last week
+                  <div style={{ color: fill, marginTop: 6, fontSize: 12, fontWeight: 500 }}>
+                    {c.weekPct > 0 ? '↑' : '↓'} {formatPct(Math.abs(c.weekPct))} vs last week
                   </div>
                 )}
               </div>
