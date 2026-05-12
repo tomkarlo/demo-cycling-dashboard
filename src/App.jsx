@@ -10,7 +10,7 @@ const TAB_W   = 28;
 export default function App() {
   const { loading, error, counters, boroughSeries, latestDate } = useCyclingData();
   const [selected, setSelected]   = useState(null);
-  const [panelOpen, setPanelOpen] = useState(() => window.innerWidth >= 768);
+  const [panelOpen, setPanelOpen] = useState(true);
 
   if (loading) {
     return (
