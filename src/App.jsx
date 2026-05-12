@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCyclingData } from './hooks/useCyclingData';
 import CamdenMap from './components/CamdenMap';
 import StatsPanel from './components/StatsPanel';
@@ -10,7 +10,11 @@ const TAB_W   = 28;
 export default function App() {
   const { loading, error, counters, boroughSeries, latestDate } = useCyclingData();
   const [selected, setSelected]   = useState(null);
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setPanelOpen(true), 500);
+    return () => clearTimeout(t);
+  }, []);
 
   if (loading) {
     return (
